@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>Hanchiko</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+
+        :root { --primary: #2563eb; --bg: #000; --text: #fff; }
+
+        body { margin:0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica; background: var(--bg); color: var(--text); overflow: hidden; }
+
+
+
+        .top-bar {
+
+            position: fixed; top: 0; width: 100%; z-index: 1000;
+
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
+
+            backdrop-filter: blur(8px); padding-top: 5px;
+
+        }
+
+
+
+        header {
+
+            padding: 5px 0; text-align: center; font-size: 14px; font-weight: 800;
+
+            display: flex; justify-content: center; align-items: center;
+
+            letter-spacing: 1.5px; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+
+            text-transform: uppercase;
+
+        }
+
+
+
+        nav { display: flex; overflow-x: auto; padding: 5px 15px; gap: 8px; scrollbar-width: none; align-items: center; }
+
+        nav::-webkit-scrollbar { display: none; }
+
+        
+
+        nav button {
+
+            background: rgba(255,255,255,0.15); border: 0.5px solid rgba(255,255,255,0.3); 
+
+            color: white; padding: 4px 12px; border-radius: 15px; font-size: 9.5px; 
+
+            cursor: pointer; flex-shrink: 0; font-weight: 600; text-transform: uppercase;
+
+            backdrop-filter: blur(10px);
+
+        }
+
+
+
+        .container {
+
+            height: 100vh; width: 100vw; overflow-y: scroll;
+
+            scroll-snap-type: y mandatory; 
+
+            scroll-behavior: smooth;
+
+            -webkit-overflow-scrolling: touch;
+
+        }
+
+
+
+        .page { display: none; height: 100%; }
+
+        .page.active { display: block; }
+
+
+
+        .card {
+
+            position: relative; width: 100%; height: 100vh;
+
+            scroll-snap-align: start; 
+
+            scroll-snap-stop: always;
+
+            display: flex; align-items: center;
+
+            justify-content: center; background: #000;
+
+        }
+
+
+
+        video, img { 
+
+            max-width: 100%; 
+
+            max-height: 100%; 
+
+            object-fit: contain; 
+
+            background: #000; 
+
+        }
+
+
+
+        .mute-indicator {
+
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+
+            background: rgba(0, 0, 0, 0.6); color: white; padding: 15px 20px;
+
+            border-radius: 50px; font-size: 14px; font-weight: 600;
+
+            display: flex; align-items: center; gap: 10px; z-index: 20;
+
+            pointer-events: none; backdrop-filter: blur(4px);
+
+            border: 1px solid rgba(255,255,255,0.2); transition: opacity 0.3s ease;
+
+        }
+
+        body.unmuted .mute-indicator { opacity: 0 !important; visibility: hidden; }
+
+
+
+        .play-status-icon {
+
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+
+            font-size: 60px; color: rgba(255,255,255,0.5); opacity: 0;
+
+            pointer-events: none; z-index: 21; transition: opacity 0.2s;
+
+        }
+
+
+
+        .overlay {
+
+            position: absolute; bottom: 100px; left: 15px; right: 80px;
+
+            color: white; text-shadow: 0 1px 4px rgba(0,0,0,0.8); z-index: 10;
+
+        }
+
+        .overlay h2 { 
+
+            margin: 0; font-size: 10px; color: #fff; background: var(--primary); 
+
+            display: inline-block; padding: 2px 8px; border-radius: 4px; 
+
+            margin-bottom: 8px; text-transform: uppercase; font-weight: 800;
+
+        }
+
+        .overlay p { margin: 0; font-size: 13px; line-height: 1.4; font-weight: 400; opacity: 0.9; }
+
+
+
+        .actions {
+
+            position: absolute; right: 15px; bottom: 110px;
+
+            display: flex; flex-direction: column; gap: 15px; z-index: 11;
+
+        }
+
+        .actions button {
+
+            background: rgba(37, 211, 102, 0.2); border: 1px solid rgba(37, 211, 102, 0.4); 
+
+            color: #25D366; font-size: 24px; cursor: pointer; width: 48px; height: 48px;
+
+            border-radius: 50%; display: flex; align-items: center;
+
+            justify-content: center; backdrop-filter: blur(10px);
+
+        }
+
+
+
+        #loader {
+
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+
+            z-index: 2000; display: none;
+
+        }
+
+        .spinner {
+
+            width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1);
+
+            border-top: 4px solid var(--primary); border-radius: 50%;
+
+            animation: spin 0.8s linear infinite;
+
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+
+
+        footer {
+
+            position: fixed; bottom: 0; width: 100%;
+
+            background: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 100%);
+
+            border-top: 0.5px solid rgba(255,255,255,0.1);
+
+            display: flex; justify-content: space-around; padding: 12px 0 25px 0; z-index: 1001;
+
+        }
+
+        footer button { background:none; border:none; color: #888; font-size: 10px; font-weight: 700; cursor: pointer; }
+
+        footer button.active-btn { color: white; position: relative; }
+
+        footer button.active-btn::after { content: ''; position: absolute; top: -12px; left: 0; right: 0; height: 2px; background: white; }
+
+
+
+        .form-container { padding: 100px 20px; background: #f8fafc; color: #0f172a; min-height: 100vh; overflow-y: auto; }
+
+        .form-box { background: white; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+
+        input, textarea, select { width:100%; padding:14px; margin:10px 0; border-radius:10px; border:1px solid #e2e8f0; font-size: 15px; box-sizing: border-box; outline: none; }
+
+        input:focus { border-color: var(--primary); }
+
+        .submit-btn { background: var(--primary); color:white; padding:16px; border:none; border-radius:12px; font-weight:bold; width:100%; cursor:pointer; font-size: 16px; }
+
+    </style>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-V2Z8PGC26H"></script>
+
+    <script>
+
+      window.dataLayer = window.dataLayer || [];
+
+      function gtag(){dataLayer.push(arguments);}
+
+      gtag('js', new Date());
+
+      gtag('config', 'G-V2Z8PGC26H');
+
+    </script>
+
+</head>
+
+<body>
+
+
+
+<div id="loader"><div class="spinner"></div></div>
+
+
+
+<div class="top-bar" id="topBar">
+
+    <header>HANCHIKO.COM</header>
+
+    <nav id="topNav">
+
+        <button onclick="applyFilter('motivation')">Motivation</button>
+
+        <button onclick="applyFilter('exam')">Exams / Jobs</button>
+
+        <button onclick="applyFilter('serve')">Serve</button>
+
+        <button onclick="applyFilter('sale')">Sale / Rent</button>
+
+    </nav>
+
+</div>
+
+
+
+<div class="container" id="mainContainer">
+
+    <div id="feedPage" class="page active">
+
+        <div id="postContainer"></div>
+
+    </div>
+
+    <div id="createPage" class="page">
+
+        <div class="form-container">
+
+            <div class="form-box">
+
+                <h2 style="margin-top:0; font-size: 18px;">Create Post</h2>
+
+                <input id="name" placeholder="Your Name">
+
+                <input id="phone" type="tel" placeholder="Your Phone Number">
+
+                <select id="category">
+
+                    <option value="motivation">Motivation</option>
+
+                    <option value="exam">Exams/Jobs</option>
+
+                    <option value="serve">Serve</option>
+
+                    <option value="sale">Sales/Rent</option>
+
+                    <option value="product">Products</option>
+
+                    <option value="invitation">Invitation</option>
+
+                </select>
+
+                <textarea id="details" rows="4" placeholder="Enter details..."></textarea>
+
+                <button class="submit-btn" onclick="submitForm()">Submit via WhatsApp</button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<footer>
+
+    <button id="btn-feed" class="active-btn" onclick="applyFilter('all')">ALL</button>
+
+    <button id="btn-create" onclick="showPage('createPage')">CREATE</button>
+
+    <button id="btn-products" onclick="applyFilter('product')">PRODUCTS</button>
+
+</footer>
+
+
+
+<script>
+
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyz6XrhUdvqcPSoiS1ORhRPdqwz5tosickKpNFWxDs2CVIv5wKe6zsoIuJon0fD5C-H9Q/exec";
+
+    
+
+    let masterData = [];    
+
+    let filteredData = [];  
+
+    let displayedCount = 0; 
+
+    const batchSize = 5;    
+
+    let isMuted = true;
+
+    let isLoading = false;
+
+
+
+    function showLoader(show) {
+
+        document.getElementById('loader').style.display = show ? 'block' : 'none';
+
+    }
+
+
+
+    function shuffleArray(array) {
+
+        for (let i = array.length - 1; i > 0; i--) {
+
+            const j = Math.floor(Math.random() * (i + 1));
+
+            [array[i], array[j]] = [array[j], array[i]];
+
+        }
+
+        return array;
+
+    }
+
+
+
+    const videoObserver = new IntersectionObserver((entries) => {
+
+        entries.forEach(entry => {
+
+            const video = entry.target.querySelector('video');
+
+            if (video) {
+
+                if (entry.isIntersecting) {
+
+                    video.muted = isMuted;
+
+                    const playPromise = video.play();
+
+                    if (playPromise !== undefined) {
+
+                        playPromise.catch(error => { console.log("Autoplay blocked"); });
+
+                    }
+
+                } else {
+
+                    video.pause();
+
+                    video.currentTime = 0;
+
+                }
+
+            }
+
+        });
+
+    }, { threshold: 0.8 });
+
+
+
+    function handleCardClick(card) {
+
+        const video = card.querySelector('video');
+
+        if (!video) return;
+
+        
+
+        if (isMuted) {
+
+            unmuteAll();
+
+            video.play();
+
+            return;
+
+        }
+
+
+
+        const playIcon = card.querySelector('.play-status-icon');
+
+        if (video.paused) {
+
+            video.play();
+
+            playIcon.innerHTML = '<i class="fa-solid fa-play"></i>';
+
+        } else {
+
+            video.pause();
+
+            playIcon.innerHTML = '<i class="fa-solid fa-pause"></i>';
+
+        }
+
+        playIcon.style.opacity = '1';
+
+        setTimeout(() => { playIcon.style.opacity = '0'; }, 500);
+
+    }
+
+
+
+    function unmuteAll() {
+
+        isMuted = false;
+
+        document.body.classList.add('unmuted');
+
+        document.querySelectorAll('video').forEach(v => { v.muted = false; });
+
+    }
+
+
+
+    function showPage(pageId) {
+
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+
+        document.querySelectorAll('footer button').forEach(b => b.classList.remove('active-btn'));
+
+        
+
+        if(pageId === 'createPage') document.getElementById('btn-create').classList.add('active-btn');
+
+        if(pageId === 'feedPage') document.getElementById('btn-feed').classList.add('active-btn');
+
+        
+
+        document.getElementById(pageId).classList.add('active');
+
+        if(pageId !== 'feedPage') {
+
+            document.querySelectorAll('video').forEach(v => v.pause());
+
+        }
+
+    }
+
+
+
+    function loadMore() {
+
+        if (isLoading || displayedCount >= filteredData.length) return;
+
+        isLoading = true;
+
+        showLoader(true);
+
+
+
+        const container = document.getElementById("postContainer");
+
+        const nextBatch = filteredData.slice(displayedCount, displayedCount + batchSize);
+
+        
+
+        if (nextBatch.length === 0 && displayedCount === 0) {
+
+            container.innerHTML = `<div style="padding:100px; text-align:center;">No posts found.</div>`;
+
+            showLoader(false);
+
+            isLoading = false;
+
+            return;
+
+        }
+
+
+
+        nextBatch.forEach(post => {
+
+            let mediaHTML = "";
+
+            if (post.Media_Type === "video" && post.Media_URL && post.Media_URL !== "(blank)") {
+
+                const muteAttr = isMuted ? "muted" : "";
+
+                mediaHTML = `<video src="${post.Media_URL}" loop playsinline preload="auto" ${muteAttr}></video>
+
+                             <div class="mute-indicator"><i class="fa-solid fa-volume-xmark"></i> Tap for sound</div>
+
+                             <div class="play-status-icon"></div>`;
+
+            } else if (post.Media_Type === "image" && post.Media_URL && post.Media_URL !== "(blank)") {
+
+                mediaHTML = `<img src="${post.Media_URL}" loading="lazy">`;
+
+            } else {
+
+                mediaHTML = `<div style="padding:40px; text-align:center; font-size:18px;">${post.Details}</div>`;
+
+            }
+
+
+
+            const card = document.createElement('div');
+
+            card.className = 'card';
+
+            card.id = "post-" + post.ID; // Added ID to the DOM element
+
+            card.onclick = function() { handleCardClick(this); };
+
+            card.innerHTML = `${mediaHTML}
+
+                <div class="overlay"><h2>${post.Category}</h2><p>${post.Details}</p></div>
+
+                <div class="actions">
+
+                    <button onclick="event.stopPropagation(); share('${post.ID}')">
+
+                        <i class="fa-brands fa-whatsapp"></i>
+
+                    </button>
+
+                </div>`;
+
+            container.appendChild(card);
+
+            videoObserver.observe(card);
+
+        });
+
+
+
+        displayedCount += batchSize;
+
+        isLoading = false;
+
+        showLoader(false);
+
+    }
+
+
+
+    function applyFilter(type) {
+
+        if(type === 'product') { window.location.href = "products.html"; return; }
+
+        showPage('feedPage');
+
+        const container = document.getElementById("postContainer");
+
+        container.innerHTML = "";
+
+        displayedCount = 0;
+
+        filteredData = (type === 'all') ? masterData : masterData.filter(post => (post.Category || '').toLowerCase().includes(type.toLowerCase()));
+
+        loadMore();
+
+        document.getElementById('mainContainer').scrollTop = 0;
+
+    }
+
+
+
+    document.getElementById('mainContainer').addEventListener('scroll', function() {
+
+        const remainingScroll = this.scrollHeight - (this.scrollTop + this.clientHeight);
+
+        if (remainingScroll < window.innerHeight * 1.5) {
+
+            loadMore();
+
+        }
+
+    });
+
+
+
+    // Initial Fetch with deep linking logic
+
+    showLoader(true);
+
+    fetch(SCRIPT_URL)
+
+        .then(res => res.json())
+
+        .then(data => {
+
+            // 1. Get the ID from the URL (?id=...)
+
+            const urlParams = new URLSearchParams(window.location.search);
+
+            const sharedId = urlParams.get('id');
+
+
+
+            if (sharedId) {
+
+                // 2. Find the shared post
+
+                const sharedPostIndex = data.findIndex(p => String(p.ID) === String(sharedId));
+
+                
+
+                if (sharedPostIndex !== -1) {
+
+                    // 3. Remove it from its original spot and put it at the very top
+
+                    const sharedPost = data.splice(sharedPostIndex, 1)[0];
+
+                    masterData = [sharedPost, ...shuffleArray(data)];
+
+                } else {
+
+                    masterData = shuffleArray(data);
+
+                }
+
+            } else {
+
+                masterData = shuffleArray(data);
+
+            }
+
+
+
+            filteredData = masterData;
+
+            loadMore();
+
+        })
+
+        .catch(err => console.error("Error loading data", err))
+
+        .finally(() => showLoader(false));
+
+
+
+    function share(id) { 
+
+        // Generates a link like: hanchiko.com/index.html?id=123
+
+        const shareLink = window.location.origin + window.location.pathname + "?id=" + id;
+
+        const text = encodeURIComponent(`Check this out on Hanchiko: ${shareLink}`);
+
+        window.open(`https://wa.me/?text=${text}`); 
+
+    }
+
+
+
+    function submitForm() {
+
+        let name = document.getElementById('name').value;
+
+        let phone = document.getElementById('phone').value;
+
+        let cat = document.getElementById('category').value;
+
+        let info = document.getElementById('details').value;
+
+        if(!name || !phone || !info) { alert("Please fill all fields"); return; }
+
+        let msg = `New Request from Hanchiko:%0A- Name: ${name}%0A- Phone: ${phone}%0A- Category: ${cat}%0A- Details: ${info}`;
+
+        window.open(`https://wa.me/919449954770?text=${msg}`, '_blank');
+
+    }
+
+</script>
+
+
+
+</body>
+
+</html>
